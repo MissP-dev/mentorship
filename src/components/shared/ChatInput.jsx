@@ -78,7 +78,7 @@ export default function ChatInput({ onSend }) {
   };
 
   return (
-    <form onSubmit={handleSend} className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+    <form onSubmit={handleSend} className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
       <div className="max-w-2xl mx-auto">
         {file && (
           <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
@@ -107,7 +107,7 @@ export default function ChatInput({ onSend }) {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           >
             <Paperclip size={20} />
           </button>
@@ -118,7 +118,7 @@ export default function ChatInput({ onSend }) {
               <Mic size={20} />
             </button>
           ) : (
-            <button type="button" onClick={startRecording} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <button type="button" onClick={startRecording} className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
               <Mic size={20} />
             </button>
           )}
@@ -134,7 +134,7 @@ export default function ChatInput({ onSend }) {
           <button
             type="submit"
             disabled={sending || (!text.trim() && !file) || recording}
-            className="p-2 bg-purple-700 text-white rounded-full disabled:bg-purple-300"
+            className="p-2 bg-purple-600 dark:bg-purple-700 text-white rounded-full disabled:bg-purple-300 dark:disabled:bg-purple-800"
           >
             {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
           </button>

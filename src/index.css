@@ -22,3 +22,35 @@
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+:root {
+  --bg: #ffffff;
+  --bg-card: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-hover: #f3f4f6;
+  --bg-input: #f9fafb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --accent: #7c3aed;
+  --accent-light: #a78bfa;
+  --accent-bg: #ede9fe;
+}
+
+.dark {
+  --bg: #0d0f17;
+  --bg-card: #0d0f17;
+  --bg-secondary: #1e293b;
+  --bg-hover: #334155;
+  --bg-input: #1e293b;
+  --border: #1e293b;
+  --border-strong: #334155;
+  --text: #ffffff;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent: #8b5cf6;
+  --accent-light: #a78bfa;
+  --accent-bg: rgba(139, 92, 246, 0.1);
+}

@@ -102,15 +102,15 @@ export default function ProfileScreen() {
           </div>
           <Input label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bio</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Bio</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
             />
           </div>
-          {msg && <p className="text-sm text-green-600">{msg}</p>}
+          {msg && <p className="text-sm text-green-600 dark:text-green-400">{msg}</p>}
           <Button className="w-full" onClick={handleSaveProfile} disabled={loading}>
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
                         <Avatar src={from?.avatarUrl} alt={from?.fullName} size="sm" />
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{from?.fullName}</p>
-                          <p className="text-xs text-gray-400">{req.duration}</p>
+                           <p className="text-xs text-gray-400 dark:text-gray-500">{req.duration}</p>
                         </div>
                       </div>
                       <p className="text-sm text-gray-700 dark:text-gray-300">{req.message}</p>
@@ -191,7 +191,7 @@ export default function ProfileScreen() {
                         <Avatar src={to?.avatarUrl} alt={to?.fullName} size="sm" />
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{to?.fullName}</p>
-                          <p className="text-xs text-gray-400">{req.duration}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{req.duration}</p>
                         </div>
                       </div>
                       <Badge color={statusColors[req.status]}>{req.status}</Badge>

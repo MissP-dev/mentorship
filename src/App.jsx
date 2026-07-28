@@ -10,6 +10,8 @@ import NotificationToast from './components/notifications/NotificationToast';
 import WelcomePage from './components/auth/WelcomePage';
 import LoginScreen from './components/auth/LoginScreen';
 import SignUpScreen from './components/auth/SignUpScreen';
+import ForgotPasswordScreen from './components/auth/ForgotPasswordScreen';
+import ResetPasswordScreen from './components/auth/ResetPasswordScreen';
 
 import AdminDashboard from './components/admin/AdminDashboard';
 
@@ -26,9 +28,11 @@ import CommentsScreen from './components/feed/CommentsScreen';
 
 import GroupsListScreen from './components/groups/GroupsListScreen';
 import CreateGroupScreen from './components/groups/CreateGroupScreen';
+import GroupEditScreen from './components/groups/GroupEditScreen';
 import ChatInboxScreen from './components/messages/ChatInboxScreen';
 import MessageScreen from './components/messages/MessageScreen';
 import GroupMessageScreen from './components/messages/GroupMessageScreen';
+import GroupCallScreen from './components/call/GroupCallScreen';
 
 import NotificationsScreen from './components/notifications/NotificationsScreen';
 import SettingsScreen from './components/settings/SettingsScreen';
@@ -50,6 +54,8 @@ export default function App() {
             <Route path="/" element={<WelcomePage />} />
             <Route path="/login" element={<LoginScreen />} />
             <Route path="/signup" element={<SignUpScreen />} />
+            <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
+            <Route path="/reset-password" element={<ResetPasswordScreen />} />
             <Route path="/dashboard" element={<Navigate to="/feed" replace />} />
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
             <Route path="/mentors" element={<ProtectedRoute><AppLayout><SearchMentorScreen /></AppLayout></ProtectedRoute>} />
@@ -57,15 +63,17 @@ export default function App() {
             <Route path="/mentors/:id/request" element={<ProtectedRoute><AppLayout><MentorshipRequestScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/mentor-profile-setup" element={<ProtectedRoute><AppLayout><MentorProfileSetupScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/sessions/:id" element={<ProtectedRoute><AppLayout><SessionScreen /></AppLayout></ProtectedRoute>} />
-            <Route path="/feed" element={<AppLayout><SocialFeedScreen /></AppLayout>} />
+            <Route path="/feed" element={<SocialFeedScreen />} />
             <Route path="/feed/new" element={<ProtectedRoute><AppLayout><CreatePostScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/posts/:id" element={<ProtectedRoute><AppLayout><PostDetailScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/posts/:id/comments" element={<ProtectedRoute><AppLayout><CommentsScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><AppLayout><ChatInboxScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/messages/:id" element={<ProtectedRoute><AppLayout><MessageScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/messages/group/:id" element={<ProtectedRoute><AppLayout><GroupMessageScreen /></AppLayout></ProtectedRoute>} />
+            <Route path="/groups/:id/call" element={<ProtectedRoute><GroupCallScreen /></ProtectedRoute>} />
             <Route path="/groups" element={<ProtectedRoute><AppLayout><GroupsListScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/groups/new" element={<ProtectedRoute><AppLayout><CreateGroupScreen /></AppLayout></ProtectedRoute>} />
+            <Route path="/groups/:id/edit" element={<ProtectedRoute><AppLayout><GroupEditScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><AppLayout><NotificationsScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsScreen /></AppLayout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><AppLayout><ProfileScreen /></AppLayout></ProtectedRoute>} />

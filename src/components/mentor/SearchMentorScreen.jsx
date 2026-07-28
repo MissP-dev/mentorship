@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 import { getMentors } from '../../services/auth';
 import TopBar from '../shared/TopBar';
 import MentorCard from '../shared/MentorCard';
@@ -10,7 +10,6 @@ export default function SearchMentorScreen() {
   const navigate = useNavigate();
   const [mentors, setMentors] = useState([]);
   const [filtered, setFiltered] = useState([]);
-  const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTags, setSelectedTags] = useState([]);
   const [minRating, setMinRating] = useState(0);
@@ -21,13 +20,6 @@ export default function SearchMentorScreen() {
 
   useEffect(() => {
     let result = mentors;
-    if (search) {
-      result = result.filter(
-        (m) =>
-          m.fullName.toLowerCase().includes(search.toLowerCase()) ||
-          m.expertiseTags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
-      );
-    }
     if (selectedTags.length > 0) {
       result = result.filter((m) => selectedTags.some((t) => m.expertiseTags.includes(t)));
     }
@@ -35,7 +27,7 @@ export default function SearchMentorScreen() {
       result = result.filter((m) => m.rating >= minRating);
     }
     setFiltered(result);
-  }, [mentors, search, selectedTags, minRating]);
+  }, [mentors, selectedTags, minRating]);
 
   const allTags = [...new Set(mentors.flatMap((m) => m.expertiseTags))];
 
@@ -47,17 +39,7 @@ export default function SearchMentorScreen() {
     <div>
       <TopBar title="Find Mentors" showBack />
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name or skill..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
+        <div className="flex justify-end">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2.5 rounded-lg border ${showFilters ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}

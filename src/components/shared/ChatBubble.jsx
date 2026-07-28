@@ -65,10 +65,10 @@ export default function ChatBubble({ message, senderName }) {
           target="_blank"
           rel="noopener noreferrer"
           className={`flex items-center gap-2 p-2 rounded-lg mb-1 ${
-            isOwn ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-600'
+            isOwn ? 'bg-purple-600 dark:bg-purple-700' : 'bg-gray-200 dark:bg-gray-800'
           }`}
         >
-          <FileText size={20} className={isOwn ? 'text-purple-200' : 'text-gray-500'} />
+          <FileText size={20} className={isOwn ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'} />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium truncate">{fileName}</p>
           </div>
@@ -85,8 +85,8 @@ export default function ChatBubble({ message, senderName }) {
       <div
         className={`max-w-[80%] px-4 py-2 rounded-2xl ${
           isOwn
-            ? 'bg-purple-700 text-white rounded-br-md'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-md'
+            ? 'bg-purple-600 dark:bg-purple-700 text-white rounded-br-md'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md'
         }`}
       >
         {!isOwn && senderName && (

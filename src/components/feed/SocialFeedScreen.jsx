@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Send, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, X, Send, Trash2, ChevronLeft, ChevronRight, Image, Film } from 'lucide-react';
 import { getPosts } from '../../services/posts';
 import { getAllUsers } from '../../services/auth';
 import { getStories, createStory, deleteStory, addStoryComment } from '../../services/stories';
 import { useAuth } from '../../context/AuthContext';
 import TopBar from '../shared/TopBar';
+import DesktopSidebar from '../shared/DesktopSidebar';
+import BottomNav from '../shared/BottomNav';
 import PostCard from '../shared/PostCard';
 import Avatar from '../shared/Avatar';
 
@@ -326,82 +328,107 @@ export default function SocialFeedScreen() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17]">
+      <DesktopSidebar />
       <TopBar title="Home" showNotifications />
-      <main className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          <div className="flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="relative">
+      <div className="lg:ml-[225px] pt-12 pb-16 lg:pb-0 min-h-screen">
+        <div className="max-w-[900px] mx-auto px-4 py-4">
+          {/* Create Post */}
+          <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg p-4 mb-3">
+            <div className="flex items-center gap-3">
+              <Avatar src={user?.avatarUrl} alt={user?.fullName} />
               <button
-                onClick={openMyStories}
-                className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                  myStories.length > 0
-                    ? 'bg-transparent'
-                    : 'bg-purple-100 dark:bg-purple-900/40 border-2 border-dashed border-purple-400 dark:border-purple-600'
-                }`}
+                onClick={() => navigate('/feed/new')}
+                className="flex-1 text-left px-4 py-2 bg-gray-100 dark:bg-[#1e293b] border border-gray-200 dark:border-[#334155] rounded-full text-sm text-gray-500 hover:bg-gray-200 dark:hover:bg-[#334155] transition-colors"
               >
-                {myStories.length > 0 ? (
-                  myStories[0].mediaUrl ? (
-                    <img src={myStories[0].mediaUrl} alt="Your story" className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-gray-950" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-purple-700 flex items-center justify-center border-2 border-white dark:border-gray-950">
-                      <span className="text-white text-xs font-bold text-center px-1 line-clamp-2">{(myStories[0].text || myStories[0].caption)?.slice(0, 20)}</span>
-                    </div>
-                  )
-                ) : (
-                  <Plus size={24} className="text-purple-600 dark:text-purple-400" />
-                )}
+                Share something with your network...
               </button>
-              {myStories.length > 0 && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowNewStory(true); }}
-                  className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-purple-600 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-gray-950"
-                >
-                  <Plus size={12} />
-                </button>
-              )}
             </div>
-            <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-center truncate">
-              {myStories.length > 0 ? 'Your story' : 'Add story'}
-            </span>
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-[#1e293b]">
+              <button onClick={() => navigate('/feed/new')} className="flex-1 flex items-center justify-center gap-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50 dark:hover:bg-[#1e293b] rounded transition-colors">
+                <Image size={16} className="text-purple-600 dark:text-[#8b5cf6]" />
+                <span>Photo</span>
+              </button>
+              <button onClick={() => setShowNewStory(true)} className="flex-1 flex items-center justify-center gap-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50 dark:hover:bg-[#1e293b] rounded transition-colors">
+                <Film size={16} className="text-yellow-500" />
+                <span>Story</span>
+              </button>
+            </div>
           </div>
 
-          {otherUsersStories.map(({ userId, stories: userStories, first }) => (
-            <div key={userId} className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer" onClick={() => openUserStories(userStories)}>
-              <div className="p-0.5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
-                {first.mediaUrl ? (
-                  <img src={first.mediaUrl} alt={first.user?.fullName} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-gray-950" />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-purple-700 flex items-center justify-center border-2 border-white dark:border-gray-950">
-                    <span className="text-white text-xs font-bold text-center px-1 line-clamp-2">{(first.text || first.caption)?.slice(0, 20)}</span>
+          {/* Stories */}
+          {(myStories.length > 0 || otherUsersStories.length > 0) && (
+            <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg p-3 mb-3">
+              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <div className="relative">
+                    <button
+                      onClick={openMyStories}
+                      className={`w-14 h-14 rounded-full flex items-center justify-center ${
+                        myStories.length > 0
+                          ? 'bg-transparent'
+                          : 'border-2 border-dashed border-purple-300 dark:border-[#8b5cf6]/50 bg-purple-50 dark:bg-[#8b5cf6]/10'
+                      }`}
+                    >
+                      {myStories.length > 0 ? (
+                        myStories[0].mediaUrl ? (
+                          <img src={myStories[0].mediaUrl} alt="Your story" className="w-14 h-14 rounded-full object-cover ring-2 ring-white dark:ring-[#0d0f17]" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-purple-800 dark:from-[#8b5cf6] dark:to-[#6d28d9] flex items-center justify-center ring-2 ring-white dark:ring-[#0d0f17]">
+                            <span className="text-white text-xs font-bold text-center px-1 line-clamp-2">{(myStories[0].text || myStories[0].caption)?.slice(0, 20)}</span>
+                          </div>
+                        )
+                      ) : (
+                        <Plus size={24} className="text-purple-600 dark:text-[#8b5cf6]" />
+                      )}
+                    </button>
+                    {myStories.length > 0 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowNewStory(true); }}
+                        className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-purple-600 dark:bg-[#8b5cf6] text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#0d0f17]"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-center truncate">{first.user?.fullName?.split(' ')[0]}</span>
-            </div>
-          ))}
+                  <span className="text-[10px] text-gray-500 w-12 text-center truncate">
+                    {myStories.length > 0 ? 'Your story' : 'Add story'}
+                  </span>
+                </div>
 
-          {otherUsersStories.length === 0 && myStories.length === 0 && users.filter((u) => u.isMentorProfileComplete).slice(0, 6).map((u) => (
-            <div key={u.id} className="flex flex-col items-center gap-1 flex-shrink-0">
-              <div className="p-0.5 rounded-full bg-gray-200 dark:bg-gray-700">
-                <Avatar src={u.avatarUrl} alt={u.fullName} size="md" className="border-2 border-white dark:border-gray-950" />
+                {otherUsersStories.map(({ userId, stories: userStories, first }) => (
+                  <div key={userId} className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer" onClick={() => openUserStories(userStories)}>
+                    <div className="p-0.5 rounded-full bg-gradient-to-br from-purple-600 to-purple-400 dark:from-[#8b5cf6] dark:to-[#a78bfa]">
+                      {first.mediaUrl ? (
+                        <img src={first.mediaUrl} alt={first.user?.fullName} className="w-14 h-14 rounded-full object-cover ring-2 ring-white dark:ring-[#0d0f17]" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-gray-200 dark:bg-[#1e293b] flex items-center justify-center ring-2 ring-white dark:ring-[#0d0f17]">
+                          <span className="text-gray-900 dark:text-white text-xs font-bold text-center px-1 line-clamp-2">{(first.text || first.caption)?.slice(0, 20)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-gray-500 w-12 text-center truncate">{first.user?.fullName?.split(' ')[0]}</span>
+                  </div>
+                ))}
               </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-center truncate">{u.fullName.split(' ')[0]}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} author={getUserById(post.authorId)} onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))} />
-          ))}
-          {posts.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-400 dark:text-gray-500 text-sm">No posts yet. Be the first to share something!</p>
             </div>
           )}
+
+          {/* Feed */}
+          <div className="space-y-3">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} author={getUserById(post.authorId)} onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))} />
+            ))}
+            {posts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-sm">No posts yet. Be the first to share something!</p>
+              </div>
+            )}
+          </div>
         </div>
-      </main>
+      </div>
+
+      <BottomNav />
 
       {viewingUserStories && (
         <StoryViewer
@@ -416,7 +443,7 @@ export default function SocialFeedScreen() {
 
       <button
         onClick={() => navigate('/feed/new')}
-        className="fixed bottom-20 right-4 lg:bottom-8 lg:right-8 w-14 h-14 bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-800 transition-colors z-40"
+        className="fixed bottom-20 right-4 lg:bottom-8 lg:right-8 w-14 h-14 bg-gradient-to-br from-purple-600 to-purple-800 dark:from-[#8b5cf6] dark:to-[#6d28d9] text-white rounded-full shadow-lg shadow-purple-500/25 flex items-center justify-center hover:shadow-purple-500/40 transition-all z-40"
       >
         <Plus size={24} />
       </button>

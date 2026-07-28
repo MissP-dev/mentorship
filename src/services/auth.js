@@ -43,3 +43,21 @@ export async function changePassword(id, currentPassword, newPassword) {
     body: JSON.stringify({ currentPassword, newPassword }),
   });
 }
+
+export async function forgotPassword(email) {
+  return api('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token, newPassword) {
+  return api('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  });
+}
+
+export async function deleteAccount() {
+  return api('/users/me', { method: 'DELETE' });
+}

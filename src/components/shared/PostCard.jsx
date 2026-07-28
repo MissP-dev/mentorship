@@ -1,4 +1,4 @@
-import { Heart, PartyPopper, HandHeart, MessageCircle, Trash2 } from 'lucide-react';
+import { Heart, PartyPopper, HandHeart, MessageCircle, Trash2, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import Avatar from './Avatar';
 import { useNavigate } from 'react-router-dom';
@@ -39,10 +39,10 @@ export default function PostCard({ post, author, onDelete }) {
   const timeAgo = (dateStr) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 60) return `${mins}m`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+    if (hrs < 24) return `${hrs}h`;
+    return `${Math.floor(hrs / 24)}d`;
   };
 
   const handleDelete = async () => {
@@ -56,63 +56,116 @@ export default function PostCard({ post, author, onDelete }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex items-center gap-3 mb-3">
-        <Avatar src={author?.avatarUrl} alt={author?.fullName} />
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 dark:text-white text-sm">{author?.fullName}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{timeAgo(post.createdAt)}</p>
-        </div>
-        {isOwner && (
-          <button onClick={handleDelete} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
-            <Trash2 size={16} />
+    <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg overflow-hidden">
+      <div className="p-3 sm:p-4 pb-0">
+        <div className="flex items-start gap-2.5">
+          <button onClick={() => author && navigate(`/profile`)}>
+            <Avatar src={author?.avatarUrl} alt={author?.fullName} />
           </button>
-        )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors cursor-pointer truncate">{author?.fullName}</p>
+              <span className="text-gray-400 dark:text-gray-600 text-xs">·</span>
+              <span className="text-[11px] text-gray-500 flex-shrink-0">{timeAgo(post.createdAt)}</span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-0.5">MConnect Member</p>
+          </div>
+          {isOwner && (
+            <button onClick={handleDelete} className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded hover:bg-gray-100 dark:hover:bg-[#1e293b]">
+              <Trash2 size={15} />
+            </button>
+          )}
+        </div>
       </div>
-      <p className="text-gray-800 dark:text-gray-200 text-sm mb-3 whitespace-pre-wrap">{post.content}</p>
+
+      <div className="px-3 sm:px-4 py-2.5">
+        <p className="text-[13px] text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+      </div>
+
       {post.mediaUrl && post.mediaType === 'image' && (
-        <img src={post.mediaUrl} alt="Post media" className="w-full rounded-lg mb-3 object-cover max-h-80" />
+        <div className="border-t border-gray-100 dark:border-[#1e293b]">
+          <img src={post.mediaUrl} alt="Post media" className="w-full object-cover max-h-[500px]" />
+        </div>
       )}
-      <div className="flex items-center gap-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+
+      {(reactions.like + reactions.celebrate + reactions.support) > 0 && (
+        <div className="px-3 sm:px-4 py-2 flex items-center justify-between text-[11px] text-gray-500">
+          <div className="flex items-center gap-1">
+            {reactions.like > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center">
+                  <Heart size={10} className="text-white" fill="white" />
+                </span>
+                {reactions.like}
+              </span>
+            )}
+            {reactions.celebrate > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-[18px] h-[18px] bg-yellow-500 rounded-full flex items-center justify-center text-[9px]">
+                  🎉
+                </span>
+                {reactions.celebrate}
+              </span>
+            )}
+            {reactions.support > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-[18px] h-[18px] bg-purple-500 rounded-full flex items-center justify-center text-[9px]">
+                  💜
+                </span>
+                {reactions.support}
+              </span>
+            )}
+          </div>
+          {post.commentCount > 0 && (
+            <button onClick={() => navigate(`/posts/${post.id}`)} className="hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors">
+              {post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="border-t border-gray-100 dark:border-[#1e293b] mx-3 sm:mx-4" />
+
+      <div className="px-1 sm:px-2 py-1 flex items-center">
         <button
           onClick={() => handleReaction('like')}
-          className={`flex items-center gap-1 text-sm transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium transition-colors ${
             userReaction === 'like'
-              ? 'text-red-500'
-              : 'text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+              ? 'text-purple-600 dark:text-[#8b5cf6]'
+              : 'text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa]'
           }`}
         >
           <Heart size={16} fill={userReaction === 'like' ? 'currentColor' : 'none'} />
-          <span>{reactions.like}</span>
+          <span className="hidden sm:inline">Like</span>
         </button>
         <button
           onClick={() => handleReaction('celebrate')}
-          className={`flex items-center gap-1 text-sm transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium transition-colors ${
             userReaction === 'celebrate'
               ? 'text-yellow-500'
-              : 'text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+              : 'text-gray-500 hover:text-yellow-500'
           }`}
         >
           <PartyPopper size={16} />
-          <span>{reactions.celebrate}</span>
+          <span className="hidden sm:inline">Celebrate</span>
         </button>
         <button
           onClick={() => handleReaction('support')}
-          className={`flex items-center gap-1 text-sm transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium transition-colors ${
             userReaction === 'support'
-              ? 'text-purple-500'
-              : 'text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+              ? 'text-purple-500 dark:text-[#a78bfa]'
+              : 'text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa]'
           }`}
         >
           <HandHeart size={16} />
-          <span>{reactions.support}</span>
+          <span className="hidden sm:inline">Support</span>
         </button>
         <button
           onClick={() => navigate(`/posts/${post.id}`)}
-          className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors ml-auto"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors"
         >
           <MessageCircle size={16} />
-          <span>{post.commentCount}</span>
+          <span className="hidden sm:inline">Comment</span>
         </button>
       </div>
     </div>

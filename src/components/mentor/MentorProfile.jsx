@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Star, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Star, MoreVertical, Pencil, Trash2, Flag } from 'lucide-react';
 import { getUserById } from '../../services/auth';
 import { getReviewsByMentor, createReview, updateReview, deleteReview } from '../../services/reviews';
+import { api } from '../../services/api';
 import TopBar from '../shared/TopBar';
 import Avatar from '../shared/Avatar';
 import Button from '../shared/Button';
@@ -36,6 +37,10 @@ export default function MentorProfile() {
   const [reviewText, setReviewText] = useState('');
   const [reviewMsg, setReviewMsg] = useState('');
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportType, setReportType] = useState('');
+  const [reportSending, setReportSending] = useState(false);
+  const [reportMsg, setReportMsg] = useState('');
   const isOwnProfile = user?.id === Number(id);
 
   useEffect(() => {
@@ -121,6 +126,22 @@ export default function MentorProfile() {
     setReviewMsg('');
   };
 
+  const handleReport = async () => {
+    if (!reportType) return;
+    setReportSending(true);
+    try {
+      await api('/admin/reports', {
+        method: 'POST',
+        body: JSON.stringify({ type: reportType, targetType: 'user', targetId: Number(id) }),
+      });
+      setReportMsg('Report submitted. Thank you.');
+      setTimeout(() => { setShowReportModal(false); setReportMsg(''); setReportType(''); }, 2000);
+    } catch (err) {
+      setReportMsg(err.message || 'Failed to submit report');
+    }
+    setReportSending(false);
+  };
+
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
@@ -145,18 +166,27 @@ export default function MentorProfile() {
     <div className="pb-24 lg:pb-8">
       <TopBar title="Mentor Profile" showBack />
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <Avatar src={mentor.avatarUrl} alt={mentor.fullName} size="xl" />
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{mentor.fullName}</h1>
-            <p className="text-xs text-gray-400 mt-1">Mentor since {new Date(mentor.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
-            <div className="flex items-center gap-1 mt-1">
-              <Star size={14} className="text-yellow-500 fill-yellow-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">{mentor.rating?.toFixed(1) || '0.0'}</span>
-              <span className="text-xs text-gray-400 ml-1">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
+          <div className="flex items-center gap-4">
+            <Avatar src={mentor.avatarUrl} alt={mentor.fullName} size="xl" />
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{mentor.fullName}</h1>
+              <p className="text-xs text-gray-400 mt-1">Mentor since {new Date(mentor.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">{mentor.rating?.toFixed(1) || '0.0'}</span>
+                <span className="text-xs text-gray-400 ml-1">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
+              </div>
             </div>
+            {!isOwnProfile && (
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors"
+              >
+                <Flag size={13} />
+                Report
+              </button>
+            )}
           </div>
-        </div>
 
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           {['bio', 'expertise', 'reviews'].map((tab) => (
@@ -273,6 +303,33 @@ export default function MentorProfile() {
           )}
         </div>
       </main>
+
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Report User</h3>
+            {reportMsg ? (
+              <p className={`text-sm ${reportMsg.includes('submitted') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{reportMsg}</p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Why are you reporting <span className="font-medium text-gray-900 dark:text-white">{mentor.fullName}</span>?</p>
+                <div className="space-y-2">
+                  {['Inappropriate behavior', 'Fake profile', 'Harassment', 'Spam', 'Other'].map((option) => (
+                    <label key={option} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${reportType === option ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}>
+                      <input type="radio" name="reportType" value={option} checked={reportType === option} onChange={(e) => setReportType(e.target.value)} className="text-purple-700 focus:ring-purple-500" />
+                      <span className="text-sm text-gray-900 dark:text-white">{option}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => { setShowReportModal(false); setReportMsg(''); setReportType(''); }} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                  <button onClick={handleReport} disabled={!reportType || reportSending} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-purple-700 hover:bg-purple-800 rounded-lg transition-colors disabled:opacity-50">{reportSending ? 'Sending...' : 'Submit'}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {!isOwnProfile && (
         <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 lg:static lg:border-0 lg:bg-transparent lg:p-0">

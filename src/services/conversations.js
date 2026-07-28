@@ -58,3 +58,37 @@ export async function createConversation(data) {
 export async function markAsRead(conversationId) {
   return api(`/conversations/${conversationId}/read`, { method: 'PATCH' });
 }
+
+export async function updateGroup(convId, data, file) {
+  const token = getToken();
+  const formData = new FormData();
+  if (data.groupName !== undefined) formData.append('groupName', data.groupName);
+  if (file) formData.append('file', file);
+
+  const res = await fetch(`/api/conversations/${convId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || 'Update failed');
+  return result;
+}
+
+export async function addGroupMember(convId, userId) {
+  return api(`/conversations/${convId}/participants`, {
+    method: 'POST',
+    body: JSON.stringify({ userId }),
+  });
+}
+
+export async function removeGroupMember(convId, userId) {
+  const token = getToken();
+  const res = await fetch(`/api/conversations/${convId}/participants/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || 'Remove failed');
+  return result;
+}

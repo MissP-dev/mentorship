@@ -9,7 +9,7 @@ export default function WelcomePage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
@@ -46,7 +46,7 @@ export default function WelcomePage() {
               <button onClick={() => navigate('/signup')} className="w-full sm:w-auto px-8 py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-semibold rounded-xl text-base transition-colors shadow-lg shadow-purple-700/25">
                 Get Started Free
               </button>
-              <button onClick={() => { if (isAuthenticated) navigate('/feed'); else navigate('/login'); }} className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-base hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <button onClick={() => { if (isAuthenticated) navigate('/feed'); else navigate('/login'); }} className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-base hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 Browse Mentors
               </button>
             </div>
@@ -109,7 +109,7 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+      <footer className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col md:flex-row items-start justify-between gap-8">
             <div className="max-w-sm">
@@ -127,7 +127,7 @@ export default function WelcomePage() {
               <a href="#how-it-works" className="hover:text-purple-700 dark:hover:text-purple-400 transition-colors">Contact</a>
             </div>
           </div>
-          <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-800">
+          <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
             <p className="text-xs text-gray-400 dark:text-gray-500">&copy; {new Date().getFullYear()} MConnect. All rights reserved.</p>
           </div>
         </div>

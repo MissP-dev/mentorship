@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { changePassword } from '../../services/auth';
+import { changePassword, deleteAccount } from '../../services/auth';
 
 import TopBar from '../shared/TopBar';
 import Card from '../shared/Card';
 import Input from '../shared/Input';
 import Button from '../shared/Button';
-import { LogOut, ChevronRight, Bell, Lock, Palette } from 'lucide-react';
+import { LogOut, ChevronRight, Bell, Lock, Palette, Trash2 } from 'lucide-react';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
@@ -21,6 +21,8 @@ export default function SettingsScreen() {
   const [notifPrefs, setNotifPrefs] = useState({ email: true, push: true, sessions: true });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
@@ -44,6 +46,19 @@ export default function SettingsScreen() {
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await deleteAccount();
+      logout();
+      navigate('/', { replace: true });
+    } catch (err) {
+      setMsg(err.message);
+      setShowDeleteConfirm(false);
+      setDeleteLoading(false);
+    }
   };
 
   if (section === 'notifications') {
@@ -146,7 +161,40 @@ export default function SettingsScreen() {
             <LogOut size={18} className="mr-2" /> Logout
           </Button>
         </div>
+
+        <div className="pt-2">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full flex items-center justify-center gap-2 p-3 text-sm font-medium text-purple-700 dark:text-purple-400 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+          >
+            <Trash2 size={16} />
+            Delete Account
+          </button>
+        </div>
       </main>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Account</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              This action is permanent. All your data including posts, messages, sessions, and reviews will be permanently deleted. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteConfirm(false)} disabled={deleteLoading}>
+                Cancel
+              </Button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading}
+                className="flex-1 px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
