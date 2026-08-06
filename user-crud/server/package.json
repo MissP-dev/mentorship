@@ -1,0 +1,20 @@
+{
+  "name": "user-crud-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "migrate": "npx prisma migrate dev",
+    "studio": "npx prisma studio",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.0",
+    "@prisma/client": "^7.9.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.22.0",
+    "prisma": "^7.9.0"
+  }
+}
