@@ -14,7 +14,7 @@ router.get('/stats', authenticate, adminOnly, async (req, res) => {
       prisma.user.count({ where: { isMentorProfileComplete: true } }),
       prisma.user.count({ where: { isMentorProfileComplete: false, isAdmin: false } }),
       prisma.session.count(),
-      prisma.mentorshipRequest.count({ where: { status: 'pending' } }),
+      prisma.mentorshipRequest.count({ where: { status: 'PENDING' } }),
       prisma.report.count({ where: { status: 'pending' } }),
       prisma.user.count({ where: { suspended: true } }),
       prisma.post.count(),

@@ -1,8 +1,0 @@
-export * as authService from './auth';
-export * as mentorshipService from './mentorship';
-export * as sessionService from './sessions';
-export * as availabilityService from './availability';
-export * as postService from './posts';
-export * as commentService from './comments';
-export * as conversationService from './conversations';
-export * as notificationService from './notifications';

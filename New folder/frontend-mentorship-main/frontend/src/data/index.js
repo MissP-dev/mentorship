@@ -1,9 +1,0 @@
-export { users } from './users';
-export { mentorshipRequests } from './mentorshipRequests';
-export { sessions } from './sessions';
-export { availability } from './availability';
-export { posts } from './posts';
-export { comments } from './comments';
-export { conversations } from './conversations';
-export { messages } from './messages';
-export { notifications } from './notifications';

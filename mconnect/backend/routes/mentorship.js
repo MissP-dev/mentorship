@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomBytes } from 'crypto';
 import pkg from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { authenticate } from '../middleware/auth.js';
@@ -9,6 +10,13 @@ const prisma = new pkg.PrismaClient({ adapter });
 
 const MIN_DAYS = 1;
 const MAX_DAYS = 180;
+
+const SESSION_TYPES = ['VIDEO', 'CHAT', 'IN_PERSON'];
+
+function normalizeSessionType(value) {
+  const raw = String(value || 'VIDEO').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return SESSION_TYPES.includes(raw) ? raw : 'VIDEO';
+}
 
 function parseDaysFromString(duration) {
   const d = (duration || '').toLowerCase();
@@ -50,7 +58,7 @@ function endDateFromStart(start, days) {
 router.get('/mentees', authenticate, async (req, res) => {
   try {
     const requests = await prisma.mentorshipRequest.findMany({
-      where: { mentorId: req.userId, status: { in: ['accepted', 'ended'] } },
+      where: { mentorId: req.userId, status: { in: ['ACTIVE', 'COMPLETED'] } },
       include: {
         mentee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
       },
@@ -87,6 +95,7 @@ router.get('/', authenticate, async (req, res) => {
 router.post('/', authenticate, async (req, res) => {
   try {
     const { mentorId, message } = req.body;
+    const sessionType = normalizeSessionType(req.body.sessionType);
     let durationDays;
     let duration;
     try {
@@ -100,13 +109,20 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'This user is not a mentor' });
     }
     const existing = await prisma.mentorshipRequest.findFirst({
-      where: { mentorId, menteeId: req.userId, status: 'pending' },
+      where: { mentorId, menteeId: req.userId, status: 'PENDING' },
     });
     if (existing) {
       return res.status(400).json({ error: 'You already have a pending request with this mentor' });
     }
-    const request = await prisma.mentorshipRequest.create({
-      data: { mentorId, menteeId: req.userId, message, duration, durationDays },
+const request = await prisma.mentorshipRequest.create({
+      data: {
+        message,
+        duration,
+        durationDays,
+        sessionType,
+        mentor: { connect: { id: mentorId } },
+        mentee: { connect: { id: req.userId } },
+      },
       include: {
         mentor: { select: { id: true, fullName: true, email: true } },
         mentee: { select: { id: true, fullName: true, email: true } },
@@ -116,7 +132,7 @@ router.post('/', authenticate, async (req, res) => {
       data: {
         userId: mentorId,
         type: 'mentorship_request',
-        message: `${req.userFullName || 'A mentee'} sent you a mentorship request.`,
+        message: `${req.userFullName || 'A mentee'} sent you a ${sessionType.toLowerCase().replace('_', ' ')} mentorship request.`,
         linkTo: '/profile',
       },
     });
@@ -128,19 +144,26 @@ router.post('/', authenticate, async (req, res) => {
 
 router.patch('/:id', authenticate, async (req, res) => {
   try {
-    const { status } = req.body;
+    const status = String(req.body.status || '').toUpperCase();
     const existing = await prisma.mentorshipRequest.findUnique({
       where: { id: Number(req.params.id) },
     });
     if (!existing) return res.status(404).json({ error: 'Request not found' });
+    if (!['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELLED'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
 
     const data = { status };
-    if (status === 'accepted') {
+    if (status === 'ACTIVE') {
       const startDate = existing.startDate || new Date();
       const days = existing.durationDays || parseDaysFromString(existing.duration);
       data.startDate = startDate;
       data.endDate = endDateFromStart(startDate, days);
+      data.startedAt = new Date();
       if (existing.durationDays === null) data.durationDays = days;
+    }
+    if (status === 'COMPLETED' || status === 'CANCELLED') {
+      data.endedAt = new Date();
     }
 
     const request = await prisma.mentorshipRequest.update({
@@ -151,7 +174,7 @@ router.patch('/:id', authenticate, async (req, res) => {
         mentee: { select: { id: true, fullName: true, email: true } },
       },
     });
-    if (status === 'accepted') {
+    if (status === 'ACTIVE') {
       const conv = await prisma.conversation.create({ data: { type: 'direct' } });
       await prisma.conversationParticipant.createMany({
         data: [
@@ -159,15 +182,87 @@ router.patch('/:id', authenticate, async (req, res) => {
           { conversationId: conv.id, userId: request.menteeId },
         ],
       });
+
+      let meetingId = request.meetingId;
+      let meetingTitle = null;
+      if (!meetingId && (request.sessionType || 'VIDEO') === 'VIDEO') {
+        const meeting = await prisma.meeting.create({
+          data: {
+            creatorId: request.mentorId,
+            title: `${request.mentor.fullName} × ${request.mentee.fullName} — Mentorship Session`,
+            description: 'Mentorship video call created from an accepted mentorship request.',
+            startAt: new Date(),
+            type: 'video',
+            roomName: `mconnect-mtg-${randomBytes(6).toString('hex')}`,
+            status: 'ongoing',
+            activeUserIds: [request.mentorId],
+            participants: {
+              create: [
+                { userId: request.mentorId },
+                { userId: request.menteeId },
+              ],
+            },
+          },
+        });
+        meetingId = meeting.id;
+        meetingTitle = meeting.title;
+        await prisma.mentorshipRequest.update({
+          where: { id: request.id },
+          data: { meetingId: meeting.id },
+        });
+      }
+
       await prisma.notification.create({
         data: {
           userId: request.menteeId,
           type: 'mentorship_request',
-          message: `${request.mentor.fullName} accepted your mentorship request!`,
-          linkTo: '/profile',
+          message: meetingId
+            ? `${request.mentor.fullName} accepted your video mentorship request! Join the call: ${meetingTitle}`
+            : `${request.mentor.fullName} accepted your mentorship request!`,
+          linkTo: meetingId ? `/meetings/${meetingId}` : '/profile',
         },
       });
+
+      const fresh = await prisma.mentorshipRequest.findUnique({
+        where: { id: request.id },
+        include: {
+          mentor: { select: { id: true, fullName: true, email: true } },
+          mentee: { select: { id: true, fullName: true, email: true } },
+        },
+      });
+      return res.json(fresh);
     }
+    res.json(request);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/complete', authenticate, async (req, res) => {
+  try {
+    const existing = await prisma.mentorshipRequest.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+    if (!existing) return res.status(404).json({ error: 'Request not found' });
+    if (existing.mentorId !== req.userId && existing.menteeId !== req.userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    const request = await prisma.mentorshipRequest.update({
+      where: { id: Number(req.params.id) },
+      data: { status: 'COMPLETED', endedAt: new Date() },
+      include: {
+        mentor: { select: { id: true, fullName: true, email: true } },
+        mentee: { select: { id: true, fullName: true, email: true } },
+      },
+    });
+    await prisma.notification.create({
+      data: {
+        userId: existing.mentorId === req.userId ? existing.menteeId : existing.mentorId,
+        type: 'mentorship_request',
+        message: `Mentorship with ${req.userFullName || 'your partner'} has been completed.`,
+        linkTo: '/profile',
+      },
+    });
     res.json(request);
   } catch (err) {
     res.status(500).json({ error: err.message });

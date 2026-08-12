@@ -174,10 +174,12 @@ router.post('/:id/messages', authenticate, upload.single('file'), async (req, re
 
     if (req.file) {
       attachmentUrl = `/uploads/${req.file.filename}`;
-      const ext = req.file.originalname.split('.').pop().toLowerCase();
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) type = 'image';
-      else if (['mp3', 'wav', 'ogg', 'm4a', 'webm', 'aac'].includes(ext)) type = 'voice';
-      else type = 'document';
+      if (!type || type === 'text') {
+        const ext = req.file.originalname.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) type = 'image';
+        else if (['mp3', 'wav', 'ogg', 'm4a', 'webm', 'aac', 'opus'].includes(ext)) type = 'voice';
+        else type = 'document';
+      }
     }
 
     const message = await prisma.message.create({
@@ -276,6 +278,11 @@ router.patch('/:id', authenticate, upload.single('file'), async (req, res) => {
     });
     if (!isMember) return res.status(403).json({ error: 'Not a member' });
 
+    const currentUser = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!currentUser?.isMentorProfileComplete) {
+      return res.status(403).json({ error: 'Only mentors can modify group settings' });
+    }
+
     const data = {};
     if (req.body.groupName !== undefined) data.groupName = req.body.groupName;
     if (req.file) data.groupIconUrl = `/uploads/${req.file.filename}`;
@@ -299,6 +306,11 @@ router.post('/:id/participants', authenticate, async (req, res) => {
       where: { conversationId_userId: { conversationId: convId, userId: req.userId } },
     });
     if (!existing) return res.status(403).json({ error: 'Not a member' });
+
+    const currentUser = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!currentUser?.isMentorProfileComplete) {
+      return res.status(403).json({ error: 'Only mentors can add members to groups' });
+    }
 
     const alreadyMember = await prisma.conversationParticipant.findUnique({
       where: { conversationId_userId: { conversationId: convId, userId } },
@@ -332,8 +344,9 @@ router.delete('/:id/participants/:userId', authenticate, async (req, res) => {
     });
     if (!isMember) return res.status(403).json({ error: 'Not a member' });
 
-    if (conv.createdById !== req.userId) {
-      return res.status(403).json({ error: 'Only the group creator can remove members' });
+    const currentUser = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!currentUser?.isMentorProfileComplete) {
+      return res.status(403).json({ error: 'Only mentors can remove members from groups' });
     }
 
     await prisma.conversationParticipant.delete({

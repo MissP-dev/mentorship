@@ -117,9 +117,9 @@ async function main() {
 
   await prisma.mentorshipRequest.createMany({
     data: [
-      { mentorId: sarah.id, menteeId: mentee1.id, message: 'I want to learn full-stack development.', duration: '3 months', status: 'accepted' },
-      { mentorId: marcus.id, menteeId: mentee2.id, message: 'I want to transition into UX design.', duration: '1 month', status: 'pending' },
-      { mentorId: elena.id, menteeId: mentee1.id, message: 'Interested in data science fundamentals.', duration: '6 months', status: 'pending' },
+      { mentorId: sarah.id, menteeId: mentee1.id, message: 'I want to learn full-stack development.', duration: '3 months', status: 'ACTIVE' },
+      { mentorId: marcus.id, menteeId: mentee2.id, message: 'I want to transition into UX design.', duration: '1 month', status: 'PENDING' },
+      { mentorId: elena.id, menteeId: mentee1.id, message: 'Interested in data science fundamentals.', duration: '6 months', status: 'PENDING' },
     ],
   });
 

@@ -119,6 +119,71 @@ router.patch('/:id/password', authenticate, async (req, res) => {
   }
 });
 
+router.get('/:id/stats', optionalAuth, async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const [postCount, storyCount, reelsCount, activeAsMentor, activeAsMentee, completedAsMentor, completedAsMentee] = await Promise.all([
+      prisma.post.count({ where: { authorId: userId } }),
+      prisma.story.count({ where: { userId } }),
+      prisma.post.count({ where: { authorId: userId, mediaType: 'reel' } }),
+      prisma.mentorshipRequest.count({ where: { mentorId: userId, status: 'ACTIVE' } }),
+      prisma.mentorshipRequest.count({ where: { menteeId: userId, status: 'ACTIVE' } }),
+      prisma.mentorshipRequest.count({ where: { mentorId: userId, status: 'COMPLETED' } }),
+      prisma.mentorshipRequest.count({ where: { menteeId: userId, status: 'COMPLETED' } }),
+    ]);
+    res.json({
+      posts: postCount,
+      stories: storyCount,
+      reels: reelsCount,
+      totalPosts: postCount + storyCount + reelsCount,
+      activeMentors: activeAsMentee,
+      activeMentees: activeAsMentor,
+      completedMentors: completedAsMentee,
+      completedMentees: completedAsMentor,
+      totalMenteesGraduated: completedAsMentor,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:id/mentorships', optionalAuth, async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const { role, status } = req.query;
+    const where = {};
+    if (role === 'mentor') where.mentorId = userId;
+    else if (role === 'mentee') where.menteeId = userId;
+    else where.OR = [{ mentorId: userId }, { menteeId: userId }];
+    if (status) where.status = status;
+
+    const requests = await prisma.mentorshipRequest.findMany({
+      where,
+      include: {
+        mentor: { select: { id: true, fullName: true, avatarUrl: true, bio: true, expertiseTags: true } },
+        mentee: { select: { id: true, fullName: true, avatarUrl: true, bio: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const active = requests.filter((r) => r.status === 'ACTIVE');
+    const history = requests.filter((r) => r.status === 'COMPLETED' || r.status === 'CANCELLED');
+
+    const lineage = await prisma.mentorshipRequest.findMany({
+      where: { menteeId: userId, status: 'COMPLETED' },
+      include: {
+        mentor: { select: { id: true, fullName: true, avatarUrl: true, expertiseTags: true } },
+      },
+      orderBy: { endedAt: 'desc' },
+      take: 5,
+    });
+
+    res.json({ active, history, lineage });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/me', authenticate, async (req, res) => {
   try {
     const userId = req.userId;

@@ -38,7 +38,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { title, description, location, startAt, endAt, category } = req.body;
+    const { title, description, location, startAt, endAt, category, imageUrls } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Event title is required' });
     }
@@ -54,6 +54,7 @@ router.post('/', authenticate, async (req, res) => {
         startAt: new Date(startAt),
         endAt: endAt ? new Date(endAt) : null,
         category: category || 'academic',
+        imageUrls: Array.isArray(imageUrls) ? imageUrls.slice(0, 5) : [],
       },
       include: includeCreator,
     });
@@ -78,6 +79,7 @@ router.patch('/:id', authenticate, async (req, res) => {
     if (req.body.startAt !== undefined) data.startAt = new Date(req.body.startAt);
     if (req.body.endAt !== undefined) data.endAt = req.body.endAt ? new Date(req.body.endAt) : null;
     if (req.body.category !== undefined) data.category = req.body.category;
+    if (req.body.imageUrls !== undefined) data.imageUrls = Array.isArray(req.body.imageUrls) ? req.body.imageUrls.slice(0, 5) : [];
 
     const updated = await prisma.event.update({
       where: { id: event.id },

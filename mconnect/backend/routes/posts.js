@@ -137,14 +137,17 @@ router.post('/:id/reactions', authenticate, async (req, res) => {
 
 router.get('/:id/comments', optionalAuth, async (req, res) => {
   try {
+    const authorSelect = { select: { id: true, fullName: true, avatarUrl: true } };
+    const includeReplies = (depth) => {
+      const nested = { author: authorSelect };
+      if (depth > 1) nested.replies = { include: includeReplies(depth - 1), orderBy: { createdAt: 'asc' } };
+      return nested;
+    };
     const comments = await prisma.comment.findMany({
       where: { postId: Number(req.params.id), parentId: null },
       include: {
-        author: { select: { id: true, fullName: true, avatarUrl: true } },
-        replies: {
-          include: { author: { select: { id: true, fullName: true, avatarUrl: true } } },
-          orderBy: { createdAt: 'asc' },
-        },
+        author: authorSelect,
+        replies: { include: includeReplies(3), orderBy: { createdAt: 'asc' } },
       },
       orderBy: { createdAt: 'asc' },
     });

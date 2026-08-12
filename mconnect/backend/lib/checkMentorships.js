@@ -20,7 +20,7 @@ export async function checkExpiredMentorships(prisma) {
 
   const expired = await prisma.mentorshipRequest.findMany({
     where: {
-      status: 'accepted',
+      status: 'ACTIVE',
       extendPromptSent: false,
       endDate: { not: null, lte: now },
     },

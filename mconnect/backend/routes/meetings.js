@@ -54,7 +54,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { title, description, startAt, type, participantIds } = req.body;
+    const { title, description, startAt, type, participantIds, startNow } = req.body;
 
     const creator = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!creator?.isMentorProfileComplete) {
@@ -69,9 +69,6 @@ router.post('/', authenticate, async (req, res) => {
     const inviteeIds = [...new Set((participantIds || []).map(Number))].filter(
       (id) => id !== req.userId
     );
-    if (inviteeIds.length === 0) {
-      return res.status(400).json({ error: 'Invite at least one participant' });
-    }
 
     const meeting = await prisma.meeting.create({
       data: {
@@ -81,6 +78,8 @@ router.post('/', authenticate, async (req, res) => {
         startAt: new Date(startAt),
         type: type === 'audio' ? 'audio' : 'video',
         roomName: `mconnect-mtg-${randomBytes(6).toString('hex')}`,
+        status: startNow ? 'ongoing' : 'scheduled',
+        activeUserIds: startNow ? [req.userId] : [],
         participants: {
           create: inviteeIds.map((userId) => ({ userId })),
         },
@@ -104,6 +103,102 @@ router.post('/', authenticate, async (req, res) => {
     res.status(201).json(meeting);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+async function getAccessibleMeeting(meetingId, userId) {
+  const meeting = await prisma.meeting.findUnique({
+    where: { id: Number(meetingId) },
+    include: includeAll,
+  });
+  if (!meeting) return null;
+  const isCreator = meeting.creatorId === userId;
+  const isParticipant = meeting.participants.some((p) => p.userId === userId);
+  if (!isCreator && !isParticipant) {
+    const err = new Error('You are not part of this meeting');
+    err.status = 403;
+    throw err;
+  }
+  return meeting;
+}
+
+router.post('/:id/start', authenticate, async (req, res) => {
+  try {
+    const meeting = await getAccessibleMeeting(req.params.id, req.userId);
+    if (!meeting) return res.status(404).json({ error: 'Meeting not found' });
+
+    const updated = await prisma.meeting.update({
+      where: { id: meeting.id },
+      data: {
+        status: 'ongoing',
+        activeUserIds: [...new Set([...(meeting.activeUserIds || []), req.userId])],
+      },
+      include: includeAll,
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/join', authenticate, async (req, res) => {
+  try {
+    const meeting = await getAccessibleMeeting(req.params.id, req.userId);
+    if (!meeting) return res.status(404).json({ error: 'Meeting not found' });
+    if (meeting.status === 'cancelled') {
+      return res.status(400).json({ error: 'This meeting is cancelled' });
+    }
+
+    const updated = await prisma.meeting.update({
+      where: { id: meeting.id },
+      data: {
+        status: meeting.status === 'ended' ? 'ongoing' : meeting.status,
+        activeUserIds: [...new Set([...(meeting.activeUserIds || []), req.userId])],
+      },
+      include: includeAll,
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/leave', authenticate, async (req, res) => {
+  try {
+    const meeting = await getAccessibleMeeting(req.params.id, req.userId);
+    if (!meeting) return res.status(404).json({ error: 'Meeting not found' });
+
+    const activeUserIds = (meeting.activeUserIds || []).filter((id) => id !== req.userId);
+    const updated = await prisma.meeting.update({
+      where: { id: meeting.id },
+      data: {
+        activeUserIds,
+        status: activeUserIds.length === 0 ? 'ended' : meeting.status,
+      },
+      include: includeAll,
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/end', authenticate, async (req, res) => {
+  try {
+    const meeting = await getAccessibleMeeting(req.params.id, req.userId);
+    if (!meeting) return res.status(404).json({ error: 'Meeting not found' });
+    if (meeting.creatorId !== req.userId) {
+      return res.status(403).json({ error: 'Only the meeting creator can end it' });
+    }
+
+    const updated = await prisma.meeting.update({
+      where: { id: meeting.id },
+      data: { status: 'ended', activeUserIds: [] },
+      include: includeAll,
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -131,7 +226,7 @@ router.post('/:id/invite', authenticate, async (req, res) => {
     }
 
     const requests = await prisma.mentorshipRequest.findMany({
-      where: { mentorId: req.userId, status: 'accepted' },
+      where: { mentorId: req.userId, status: 'ACTIVE' },
       select: { menteeId: true },
     });
     const myMenteeIds = new Set(requests.map((r) => r.menteeId));

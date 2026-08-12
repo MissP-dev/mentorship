@@ -1,2 +1,3 @@
 node_modules/
-dist/
+dist/mconnect/backend/uploads/
+mconnect/backend/uploads/
