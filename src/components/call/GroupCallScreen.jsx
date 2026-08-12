@@ -103,7 +103,7 @@ export default function GroupCallScreen() {
             <p className="text-sm">Connecting to voice call...</p>
           </div>
         )}
-        <div ref={iframeRef} className={`w-full h-full ${connecting ? 'opacity-0' : 'opacity-100'}`} />
+        <div ref={iframeRef} className="absolute inset-0" />
       </div>
     </div>
   );

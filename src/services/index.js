@@ -6,3 +6,7 @@ export * as postService from './posts';
 export * as commentService from './comments';
 export * as conversationService from './conversations';
 export * as notificationService from './notifications';
+export * as eventService from './events';
+export * as meetingService from './meetings';
+export * as storyService from './stories';
+export * as reelService from './reels';

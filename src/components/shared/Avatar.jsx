@@ -5,6 +5,7 @@ const COLORS = [
 ];
 
 function getColor(name) {
+  if (!name) return COLORS[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);

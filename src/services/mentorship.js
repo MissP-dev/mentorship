@@ -25,3 +25,9 @@ export async function updateMentorshipRequest(id, updates) {
     body: JSON.stringify(updates),
   });
 }
+
+export async function completeMentorshipRequest(id) {
+  return api(`/mentorship-requests/${id}/complete`, {
+    method: 'POST',
+  });
+}

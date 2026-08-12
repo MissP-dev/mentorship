@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getNotifications, markAsRead } from '../../services/notifications';
+import { getNotifications, markAsRead, resolveNotificationPath } from '../../services/notifications';
 import TopBar from '../shared/TopBar';
+import DesktopSidebar from '../shared/DesktopSidebar';
+import BottomNav from '../shared/BottomNav';
 import NotificationItem from '../shared/NotificationItem';
 
 export default function NotificationsScreen() {
@@ -21,33 +23,27 @@ export default function NotificationsScreen() {
         prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
       );
     }
-    switch (notification.type) {
-      case 'mentorship_request':
-      case 'session_reminder':
-        navigate('/dashboard');
-        break;
-      case 'new_comment':
-        navigate('/feed');
-        break;
-      default:
-        break;
-    }
+    navigate(resolveNotificationPath(notification));
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <TopBar title="Notifications" showBack />
-      <main className="max-w-2xl mx-auto">
-        {notifications.length === 0 ? (
-          <p className="text-center text-gray-500 dark:text-gray-400 py-12 text-sm">No notifications yet.</p>
-        ) : (
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {notifications.map((n) => (
-              <NotificationItem key={n.id} notification={n} onClick={handleClick} />
-            ))}
-          </div>
-        )}
-      </main>
+      <DesktopSidebar />
+      <div className="flex flex-col h-full lg:ml-[220px] pb-14 lg:pb-0">
+        <TopBar showNotifications showBack />
+        <main className="max-w-2xl mx-auto w-full flex-1">
+          {notifications.length === 0 ? (
+            <p className="text-center text-gray-500 dark:text-gray-400 py-12 text-sm">No notifications yet.</p>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {notifications.map((n) => (
+                <NotificationItem key={n.id} notification={n} onClick={handleClick} />
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+      <BottomNav />
     </div>
   );
 }

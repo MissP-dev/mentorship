@@ -59,6 +59,21 @@ export async function markAsRead(conversationId) {
   return api(`/conversations/${conversationId}/read`, { method: 'PATCH' });
 }
 
+export async function freezeConversation(conversationId) {
+  return api(`/conversations/${conversationId}/freeze`, { method: 'POST' });
+}
+
+export async function updateMessage(convId, messageId, text) {
+  return api(`/conversations/${convId}/messages/${messageId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ text }),
+  });
+}
+
+export async function removeMessage(convId, messageId) {
+  return api(`/conversations/${convId}/messages/${messageId}`, { method: 'DELETE' });
+}
+
 export async function updateGroup(convId, data, file) {
   const token = getToken();
   const formData = new FormData();

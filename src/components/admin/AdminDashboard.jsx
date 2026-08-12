@@ -8,7 +8,6 @@ import TopBar from '../shared/TopBar';
 import Card from '../shared/Card';
 import Badge from '../shared/Badge';
 import Avatar from '../shared/Avatar';
-import ThemeToggle from '../shared/ThemeToggle';
 import { Users, Briefcase, MessageSquare, AlertTriangle, Activity, Shield, Ban, Trash2, Eye, Clock, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -120,9 +119,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17]">
-      <TopBar title="Admin Dashboard" showNotifications={false}>
-        <ThemeToggle />
-      </TopBar>
+      <TopBar title="Admin Dashboard" showNotifications={false} />
 
       {actionMsg && (
         <div className="max-w-5xl mx-auto px-4 pt-2">

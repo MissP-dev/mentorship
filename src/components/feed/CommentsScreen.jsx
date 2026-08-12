@@ -1,18 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getPostById } from '../../services/posts';
-import { getCommentsByPost, addComment } from '../../services/comments';
+import { getCommentsByPost, addComment, likeComment, unlikeComment } from '../../services/comments';
 import { getAllUsers } from '../../services/auth';
 import TopBar from '../shared/TopBar';
 import Avatar from '../shared/Avatar';
 import Card from '../shared/Card';
-import { Send, Reply } from 'lucide-react';
+import { Send, Reply, Heart } from 'lucide-react';
 
-function CommentItem({ comment, users, user, postId, onReply }) {
+function CommentItem({ comment, users, user, _postId, onReply, depth = 0 }) {
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [liked, setLiked] = useState(comment.likedBy?.includes(user?.id) || false);
+  const [likeCount, setLikeCount] = useState(comment.likes || 0);
   const commentAuthor = users.find((u) => u.id === comment.authorId);
+  const navigate = useNavigate();
 
   const handleReply = async (e) => {
     e.preventDefault();
@@ -20,6 +23,22 @@ function CommentItem({ comment, users, user, postId, onReply }) {
     await onReply(replyText, comment.id);
     setReplyText('');
     setShowReplyInput(false);
+  };
+
+  const handleLike = async () => {
+    const prev = liked;
+    setLiked(!liked);
+    setLikeCount((c) => (prev ? c - 1 : c + 1));
+    try {
+      if (prev) {
+        await unlikeComment(comment.id);
+      } else {
+        await likeComment(comment.id);
+      }
+    } catch {
+      setLiked(prev);
+      setLikeCount((c) => (prev ? c + 1 : c - 1));
+    }
   };
 
   const timeAgo = (dateStr) => {
@@ -31,26 +50,48 @@ function CommentItem({ comment, users, user, postId, onReply }) {
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
+  const maxDepth = 3;
+  const paddingLeft = depth * 16;
+
   return (
     <div>
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2" style={{ paddingLeft: `${paddingLeft}px` }}>
         <Avatar src={commentAuthor?.avatarUrl} alt={commentAuthor?.fullName} size="sm" />
         <div className="flex-1">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+          <div className={`rounded-xl border border-gray-200 dark:border-gray-700 p-3 ${
+            depth > 0 ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-800'
+          }`}>
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{commentAuthor?.fullName}</p>
+              <button onClick={() => navigate(`/users/${comment.authorId}`)} className="text-sm font-medium text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400">
+                {commentAuthor?.fullName}
+              </button>
               <p className="text-xs text-gray-400 dark:text-gray-500">{timeAgo(comment.createdAt)}</p>
             </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{comment.text}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5 break-words">{comment.text}</p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <button
+                onClick={handleLike}
+                className={`flex items-center gap-1 text-xs transition-colors ${
+                  liked
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+                }`}
+              >
+                <Heart size={12} fill={liked ? 'currentColor' : 'none'} />
+                <span>{likeCount}</span>
+              </button>
+              {depth < maxDepth && (
+                <button
+                  onClick={() => setShowReplyInput(!showReplyInput)}
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-purple-600 dark:hover:text-purple-400"
+                >
+                  <Reply size={12} /> Reply
+                </button>
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => setShowReplyInput(!showReplyInput)}
-            className="flex items-center gap-1 mt-1 ml-2 text-xs text-gray-400 hover:text-purple-600 dark:hover:text-purple-400"
-          >
-            <Reply size={12} /> Reply
-          </button>
 
-          {showReplyInput && (
+          {showReplyInput && depth < maxDepth && (
             <form onSubmit={handleReply} className="flex items-center gap-2 mt-2 ml-6">
               <input
                 type="text"
@@ -69,22 +110,18 @@ function CommentItem({ comment, users, user, postId, onReply }) {
       </div>
 
       {comment.replies && comment.replies.length > 0 && (
-        <div className="ml-8 mt-2 space-y-2 border-l-2 border-gray-100 dark:border-gray-700 pl-3">
-          {comment.replies.map((reply) => {
-            const replyAuthor = users.find((u) => u.id === reply.authorId);
-            return (
-              <div key={reply.id} className="flex items-start gap-2">
-                <Avatar src={replyAuthor?.avatarUrl} alt={replyAuthor?.fullName} size="sm" />
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-2.5 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-medium text-gray-900 dark:text-white">{replyAuthor?.fullName}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{timeAgo(reply.createdAt)}</p>
-                  </div>
-                  <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{reply.text}</p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="mt-1 space-y-2 border-l border-gray-100 dark:border-gray-700 ml-3 pl-3">
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              users={users}
+              user={user}
+              postId={_postId}
+              onReply={onReply}
+              depth={depth + 1}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -94,6 +131,7 @@ function CommentItem({ comment, users, user, postId, onReply }) {
 export default function CommentsScreen() {
   const { id } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [users, setUsers] = useState([]);
@@ -123,22 +161,20 @@ export default function CommentsScreen() {
     setText('');
   };
 
-  const handleReply = async (text, parentId) => {
-    const newReply = await addComment({ postId: id, authorId: user.id, text, parentId });
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === parentId ? { ...c, replies: [...(c.replies || []), newReply] } : c
-      )
-    );
+  const insertReply = (list, parentId, reply) => {
+    if (parentId == null) return [...list, { ...reply, replies: [] }];
+    return list.map((c) => {
+      if (c.id === parentId) return { ...c, replies: insertReply(c.replies || [], parentId, reply) };
+      if (c.replies && c.replies.length > 0) {
+        return { ...c, replies: insertReply(c.replies, parentId, reply) };
+      }
+      return c;
+    });
   };
 
-  const timeAgo = (dateStr) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+  const handleReply = async (text, parentId) => {
+    const newReply = await addComment({ postId: id, authorId: user.id, text, parentId });
+    setComments((prev) => insertReply(prev, parentId, newReply));
   };
 
   return (
@@ -148,8 +184,10 @@ export default function CommentsScreen() {
         {post && (
           <Card className="mb-4">
             <div className="flex items-center gap-2 mb-2">
-              <Avatar src={author?.avatarUrl} alt={author?.fullName} size="sm" />
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{author?.fullName}</p>
+              <button onClick={() => navigate(`/users/${post.authorId}`)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Avatar src={author?.avatarUrl} alt={author?.fullName} size="sm" />
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{author?.fullName}</p>
+              </button>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{post.content}</p>
           </Card>
@@ -164,6 +202,7 @@ export default function CommentsScreen() {
               user={user}
               postId={id}
               onReply={handleReply}
+              depth={0}
             />
           ))}
           <div ref={scrollRef} />

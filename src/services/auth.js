@@ -58,6 +58,14 @@ export async function resetPassword(token, newPassword) {
   });
 }
 
+export async function getUserStats(id) {
+  return api(`/users/${id}/stats`);
+}
+
+export async function getUserMentorships(id, params = '') {
+  return api(`/users/${id}/mentorships${params}`);
+}
+
 export async function deleteAccount() {
   return api('/users/me', { method: 'DELETE' });
 }

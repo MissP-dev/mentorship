@@ -19,10 +19,10 @@ export default function ResetPasswordScreen() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-white to-gray-100 dark:from-gray-900 dark:to-gray-950 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 px-4">
         <div className="absolute top-4 right-4"><ThemeToggle /></div>
-        <div className="w-full max-w-sm text-center">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-sm">
+        <div className="w-full max-w-md text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-xl">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Invalid Link</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">This password reset link is invalid or missing.</p>
             <Link to="/forgot-password" className="text-sm text-purple-600 dark:text-purple-400 font-medium hover:text-purple-700">
@@ -57,10 +57,10 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-white to-gray-100 dark:from-gray-900 dark:to-gray-950 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 px-4">
       <div className="absolute top-4 right-4"><ThemeToggle /></div>
-      <div className="w-full max-w-sm">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-sm">
+      <div className="w-full max-w-md">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-xl">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-purple-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <span className="text-white text-2xl font-bold">M</span>
@@ -95,7 +95,7 @@ export default function ResetPasswordScreen() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min 6 characters"
                     required
-                    className="w-full pl-9 pr-10 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-9 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <button
                     type="button"
@@ -117,7 +117,7 @@ export default function ResetPasswordScreen() {
                     onChange={(e) => setConfirm(e.target.value)}
                     placeholder="Confirm your password"
                     required
-                    className="w-full pl-9 pr-10 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-9 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <button
                     type="button"

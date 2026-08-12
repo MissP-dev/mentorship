@@ -1,5 +1,6 @@
 import { X, MessageCircle, Heart, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { resolveNotificationPath } from '../../services/notifications';
 
 const iconMap = {
   new_message: MessageCircle,
@@ -11,7 +12,7 @@ export default function NotificationToast({ toasts, onDismiss }) {
 
   const handleClick = (toast) => {
     onDismiss(toast.toastId);
-    if (toast.linkTo) navigate(toast.linkTo);
+    navigate(resolveNotificationPath(toast));
   };
 
   return (

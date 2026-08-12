@@ -6,6 +6,7 @@ import { getAllUsers } from '../../services/auth';
 import TopBar from '../shared/TopBar';
 import Button from '../shared/Button';
 import Avatar from '../shared/Avatar';
+import Badge from '../shared/Badge';
 import { Camera, UserPlus, UserMinus, Check, X } from 'lucide-react';
 
 export default function GroupEditScreen() {
@@ -41,6 +42,7 @@ export default function GroupEditScreen() {
   const memberIds = (group?.participants || []).map((p) => p.user?.id ?? p.userId);
   const members = allUsers.filter((u) => memberIds.includes(u.id));
   const nonMembers = allUsers.filter((u) => !memberIds.includes(u.id) && u.id !== user.id);
+  const isMentor = user?.isMentorProfileComplete;
 
   const filteredNonMembers = nonMembers.filter((u) =>
     u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -149,13 +151,15 @@ export default function GroupEditScreen() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Members ({members.length})</h3>
-            <button
-              onClick={() => setShowAddMembers(!showAddMembers)}
-              className="flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
-            >
-              <UserPlus size={14} />
-              Add
-            </button>
+            {isMentor && (
+              <button
+                onClick={() => setShowAddMembers(!showAddMembers)}
+                className="flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
+              >
+                <UserPlus size={14} />
+                Add
+              </button>
+            )}
           </div>
 
           {showAddMembers && (
@@ -196,18 +200,25 @@ export default function GroupEditScreen() {
               <div key={m.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                 <Avatar src={m.avatarUrl} alt={m.fullName} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{m.fullName}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{m.fullName}</p>
+                    {m.isMentorProfileComplete && (
+                      <Badge color="purple" className="text-xs">Mentor</Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{m.email}</p>
                 </div>
                 {m.id === user.id ? (
                   <span className="text-xs text-gray-400 dark:text-gray-500">You</span>
-                ) : (
+                ) : isMentor ? (
                   <button
                     onClick={() => handleRemoveMember(m.id)}
                     className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                   >
                     <UserMinus size={14} />
                   </button>
+                ) : (
+                  <span className="text-xs text-gray-400 dark:text-gray-500 w-9 h-9" />
                 )}
               </div>
             ))}

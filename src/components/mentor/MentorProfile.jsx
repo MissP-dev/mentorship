@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Star, MoreVertical, Pencil, Trash2, Flag } from 'lucide-react';
-import { getUserById } from '../../services/auth';
+import { Star, MoreVertical, Pencil, Trash2, Flag, Award, GraduationCap, UserMinus, UserPlus, UserCheck, UserX, CheckCircle2, XCircle } from 'lucide-react';
+import { getUserById, getUserStats, getUserMentorships } from '../../services/auth';
 import { getReviewsByMentor, createReview, updateReview, deleteReview } from '../../services/reviews';
 import { api } from '../../services/api';
 import TopBar from '../shared/TopBar';
@@ -23,13 +23,88 @@ function StarRating({ value, onChange, size = 16 }) {
   );
 }
 
+function MentorshipRow({ item, getName, getAvatar }) {
+  const status = item?.status;
+  const label = status === 'ACTIVE' ? 'Ongoing' : status === 'COMPLETED' ? 'Completed' : 'Cancelled';
+  const color = status === 'ACTIVE'
+    ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
+    : status === 'COMPLETED'
+      ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
+      : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400';
+
+  return (
+    <div className="flex items-center gap-2.5 p-2 rounded-lg bg-gray-50 dark:bg-[#1e293b]">
+      <Avatar src={getAvatar(item)} alt={getName(item)} size="sm" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{getName(item)}</p>
+        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${color}`}>
+          {status === 'ACTIVE' ? <CheckCircle2 size={9} /> : <XCircle size={9} />}
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function MentorshipGroup({ title, total, ongoing, terminated, active, history, getName, getAvatar, emptyActive, emptyHistory }) {
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">{title}</p>
+          <span className="text-xl font-bold text-purple-700 dark:text-purple-400">{total}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 size={12} /> Ongoing: {ongoing}
+          </span>
+          <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+            <UserX size={12} /> Terminated: {terminated}
+          </span>
+        </div>
+      </div>
+
+      {active.length === 0 && history.length === 0 ? (
+        <p className="text-xs text-gray-400 dark:text-gray-500 pl-1">{emptyActive}</p>
+      ) : (
+        <div className="space-y-3">
+          {active.length > 0 && (
+            <div>
+              <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 mb-1.5 flex items-center gap-1">
+                <CheckCircle2 size={11} /> {title} · Ongoing
+              </p>
+              <div className="space-y-1.5">
+                {active.map((r) => (
+                  <MentorshipRow key={r.id} item={r} getName={getName} getAvatar={getAvatar} />
+                ))}
+              </div>
+            </div>
+          )}
+          {history.length > 0 && (
+            <div>
+              <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 mb-1.5 flex items-center gap-1">
+                <UserX size={11} /> {title} · Terminated
+              </p>
+              <div className="space-y-1.5">
+                {history.map((r) => (
+                  <MentorshipRow key={r.id} item={r} getName={getName} getAvatar={getAvatar} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MentorProfile() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [mentor, setMentor] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const [activeTab, setActiveTab] = useState('bio');
+  const [activeTab, setActiveTab] = useState('mentorship');
   const [error, setError] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
@@ -41,14 +116,22 @@ export default function MentorProfile() {
   const [reportType, setReportType] = useState('');
   const [reportSending, setReportSending] = useState(false);
   const [reportMsg, setReportMsg] = useState('');
+  const [stats, setStats] = useState(null);
+  const [lineage, setLineage] = useState([]);
+  const [asMentor, setAsMentor] = useState(null);
+  const [asMentee, setAsMentee] = useState(null);
+  const [mentorshipTab, setMentorshipTab] = useState('mentees');
   const isOwnProfile = user?.id === Number(id);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [mentorData, reviewsData] = await Promise.all([
+        const [mentorData, reviewsData, statsData, mentorshipsMentor, mentorshipsMentee] = await Promise.all([
           getUserById(id).catch(() => null),
           getReviewsByMentor(id).catch(() => []),
+          getUserStats(id).catch(() => null),
+          getUserMentorships(id, '?role=mentor').catch(() => ({ active: [], history: [], lineage: [] })),
+          getUserMentorships(id, '?role=mentee').catch(() => ({ active: [], history: [], lineage: [] })),
         ]);
         if (!mentorData) {
           setError('Mentor not found.');
@@ -56,6 +139,10 @@ export default function MentorProfile() {
         }
         setMentor(mentorData);
         setReviews(reviewsData);
+        setStats(statsData);
+        setAsMentor(mentorshipsMentor);
+        setAsMentee(mentorshipsMentee);
+        setLineage(mentorshipsMentee?.lineage || []);
       } catch (e) {
         console.error('MentorProfile load error:', e);
         setError('Failed to load profile.');
@@ -176,6 +263,12 @@ export default function MentorProfile() {
                 <span className="text-sm text-gray-600 dark:text-gray-400">{mentor.rating?.toFixed(1) || '0.0'}</span>
                 <span className="text-xs text-gray-400 ml-1">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
               </div>
+              {stats?.totalMenteesGraduated > 0 && (
+                <div className="flex items-center gap-1 mt-1.5">
+                  <GraduationCap size={13} className="text-emerald-500" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Mentees Graduated: {stats.totalMenteesGraduated}</span>
+                </div>
+              )}
             </div>
             {!isOwnProfile && (
               <button
@@ -188,8 +281,27 @@ export default function MentorProfile() {
             )}
           </div>
 
+          {lineage.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <UserMinus size={12} />
+                Trained by:
+              </span>
+              {lineage.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => navigate(`/mentors/${l.mentor.id}`)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full border border-emerald-200 dark:border-emerald-700/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                >
+                  <Avatar src={l.mentor?.avatarUrl} alt={l.mentor?.fullName} size="xs" />
+                  {l.mentor?.fullName}
+                </button>
+              ))}
+            </div>
+          )}
+
         <div className="flex border-b border-gray-200 dark:border-gray-700">
-          {['bio', 'expertise', 'reviews'].map((tab) => (
+          {['mentorship', 'bio', 'expertise', 'reviews'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -205,6 +317,65 @@ export default function MentorProfile() {
         </div>
 
         <div>
+          {activeTab === 'mentorship' && (
+            <div className="space-y-3">
+              <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setMentorshipTab('mentees')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-medium py-1.5 rounded-md transition-colors ${
+                    mentorshipTab === 'mentees'
+                      ? 'bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <UserPlus size={15} /> Mentees
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMentorshipTab('mentors')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-medium py-1.5 rounded-md transition-colors ${
+                    mentorshipTab === 'mentors'
+                      ? 'bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <GraduationCap size={15} /> Mentors
+                </button>
+              </div>
+
+              {mentorshipTab === 'mentees' ? (
+                asMentor && (
+                  <MentorshipGroup
+                    title="Mentees"
+                    total={asMentor.active.length + asMentor.history.length}
+                    ongoing={asMentor.active.length}
+                    terminated={asMentor.history.length}
+                    active={asMentor.active}
+                    history={asMentor.history}
+                    getName={(r) => r.mentee?.fullName || 'Unknown mentee'}
+                    getAvatar={(r) => r.mentee?.avatarUrl}
+                    emptyActive="No active mentees."
+                    emptyHistory="No terminated mentees."
+                  />
+                )
+              ) : (
+                asMentee && (
+                  <MentorshipGroup
+                    title="Mentors"
+                    total={asMentee.active.length + asMentee.history.length}
+                    ongoing={asMentee.active.length}
+                    terminated={asMentee.history.length}
+                    active={asMentee.active}
+                    history={asMentee.history}
+                    getName={(r) => r.mentor?.fullName || 'Unknown mentor'}
+                    getAvatar={(r) => r.mentor?.avatarUrl}
+                    emptyActive="No active mentors."
+                    emptyHistory="No past mentors."
+                  />
+                )
+              )}
+            </div>
+          )}
           {activeTab === 'bio' && (
             <Card>
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{mentor.bio || 'No bio available.'}</p>

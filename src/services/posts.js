@@ -33,3 +33,16 @@ export async function deletePost(postId) {
 export async function incrementCommentCount(postId) {
   // handled server-side when comment is created
 }
+
+export async function repostPost(postId) {
+  return api(`/posts/${postId}/reposts`, {
+    method: 'POST',
+  });
+}
+
+export async function sharePost(postId, data) {
+  return api(`/posts/${postId}/shares`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}

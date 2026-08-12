@@ -26,7 +26,7 @@ export default function SplashScreen() {
           <span className="text-white text-3xl font-bold">M</span>
         </div>
         <h1 className="text-4xl font-bold text-purple-700 dark:text-purple-400 mb-2">MConnect</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-lg">Unlock Your Potential</p>
+        <p className="text-gray-500 dark:text-gray-400 text-lg">Where Growth Meets Guidance</p>
       </div>
     </div>
   );

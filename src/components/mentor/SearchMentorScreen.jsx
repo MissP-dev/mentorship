@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, Search } from 'lucide-react';
 import { getMentors } from '../../services/auth';
 import TopBar from '../shared/TopBar';
 import MentorCard from '../shared/MentorCard';
@@ -13,6 +13,7 @@ export default function SearchMentorScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTags, setSelectedTags] = useState([]);
   const [minRating, setMinRating] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     getMentors().then(setMentors);
@@ -20,6 +21,9 @@ export default function SearchMentorScreen() {
 
   useEffect(() => {
     let result = mentors;
+    if (searchQuery.trim()) {
+      result = result.filter((m) => m.fullName?.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
     if (selectedTags.length > 0) {
       result = result.filter((m) => selectedTags.some((t) => m.expertiseTags.includes(t)));
     }
@@ -27,7 +31,7 @@ export default function SearchMentorScreen() {
       result = result.filter((m) => m.rating >= minRating);
     }
     setFiltered(result);
-  }, [mentors, selectedTags, minRating]);
+  }, [mentors, searchQuery, selectedTags, minRating]);
 
   const allTags = [...new Set(mentors.flatMap((m) => m.expertiseTags))];
 
@@ -39,13 +43,24 @@ export default function SearchMentorScreen() {
     <div>
       <TopBar title="Find Mentors" showBack />
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        <div className="flex justify-end">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search mentors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+            />
+          </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`p-2.5 rounded-lg border ${showFilters ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}
+            className={`p-2.5 rounded-lg border shrink-0 ${showFilters ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}
           >
             <SlidersHorizontal size={18} />
           </button>
+        </div>
         </div>
 
         {showFilters && (
@@ -89,14 +104,19 @@ export default function SearchMentorScreen() {
         )}
 
         <div className="space-y-3">
-          {filtered.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No mentors found matching your criteria.</p>
-          ) : (
-            filtered.map((mentor) => (
-              <MentorCard key={mentor.id} mentor={mentor} onViewProfile={(id) => navigate(`/mentors/${id}`)} />
-            ))
-          )}
-        </div>
+        {filtered.length === 0 ? (
+          <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+            No mentors found.
+          </p>
+        ) : (
+          filtered.map((mentor) => (
+            <MentorCard
+              key={mentor.id}
+              mentor={mentor}
+              onViewProfile={(id) => navigate(`/mentors/${id}`)}
+            />
+          ))
+        )}
       </div>
     </div>
   );

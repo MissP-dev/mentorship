@@ -10,3 +10,15 @@ export async function addComment(data) {
     body: JSON.stringify({ text: data.text, parentId: data.parentId || null }),
   });
 }
+
+export async function likeComment(commentId) {
+  return api(`/comments/${commentId}/likes`, {
+    method: 'POST',
+  });
+}
+
+export async function unlikeComment(commentId) {
+  return api(`/comments/${commentId}/likes`, {
+    method: 'DELETE',
+  });
+}

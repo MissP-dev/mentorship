@@ -32,7 +32,7 @@ export default function UnifiedDashboard() {
         getAllUsers(),
       ]);
       setSessions(allSessions.filter((s) => s.status === 'upcoming'));
-      setIncomingRequests(incoming.filter((r) => r.status === 'pending'));
+      setIncomingRequests(incoming.filter((r) => r.status === 'PENDING'));
       setSentRequests(sent);
       setUsers(allUsers);
     } catch (err) {
@@ -43,12 +43,12 @@ export default function UnifiedDashboard() {
   const getUserById = (id) => users.find((u) => u.id === id);
 
   const handleAccept = async (requestId) => {
-    await updateMentorshipRequest(requestId, { status: 'accepted' });
+    await updateMentorshipRequest(requestId, { status: 'ACTIVE' });
     loadData();
   };
 
   const handleDecline = async (requestId) => {
-    await updateMentorshipRequest(requestId, { status: 'declined' });
+    await updateMentorshipRequest(requestId, { status: 'CANCELLED' });
     loadData();
   };
 

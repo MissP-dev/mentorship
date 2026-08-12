@@ -1,15 +1,27 @@
-import { Bell, MessageSquare, Calendar, UserPlus } from 'lucide-react';
+import { Bell, MessageSquare, Calendar, UserPlus, Video, Heart, Phone } from 'lucide-react';
 
 const typeIcons = {
   mentorship_request: UserPlus,
+  mentorship: UserPlus,
+  mentorship_expired: UserPlus,
   session_reminder: Calendar,
   new_comment: MessageSquare,
+  new_like: Heart,
+  new_message: MessageSquare,
+  meeting: Video,
+  meeting_invite: Phone,
 };
 
 const typeColors = {
   mentorship_request: 'text-purple-500',
+  mentorship: 'text-purple-500',
+  mentorship_expired: 'text-gray-500',
   session_reminder: 'text-blue-500',
   new_comment: 'text-green-500',
+  new_like: 'text-pink-500',
+  new_message: 'text-blue-500',
+  meeting: 'text-purple-500',
+  meeting_invite: 'text-blue-500',
 };
 
 export default function NotificationItem({ notification, onClick }) {

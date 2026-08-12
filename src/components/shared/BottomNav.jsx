@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Search, MessageSquare, Users, Settings, UserCircle } from 'lucide-react';
+import { Home, MessageSquare, UserCircle, Calendar, Video, Users } from 'lucide-react';
 
 const links = [
   { to: '/feed', icon: Home, label: 'Home' },
-  { to: '/mentors', icon: Search, label: 'Search' },
   { to: '/messages', icon: MessageSquare, label: 'Messages' },
-  { to: '/groups', icon: Users, label: 'Groups' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/events', icon: Calendar, label: 'Events' },
+  { to: '/meetings', icon: Video, label: 'Meetings' },
+  { to: '/mentors', icon: Users, label: 'Mentors' },
   { to: '/profile', icon: UserCircle, label: 'Profile' },
 ];
 

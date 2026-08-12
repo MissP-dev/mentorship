@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { resolveNotificationPath } from '../../services/notifications';
 
 export default function useNotifications() {
   const { user } = useAuth();
@@ -47,13 +48,10 @@ export default function useNotifications() {
       const title = 'MConnect';
       const body = n.message;
       const notif = new Notification(title, { body, icon: '/favicon.svg' });
-      if (n.linkTo) {
-        notif.onclick = () => {
-          window.focus();
-          window.location.hash = '';
-          window.location.href = n.linkTo;
-        };
-      }
+      notif.onclick = () => {
+        window.focus();
+        window.location.href = resolveNotificationPath(n);
+      };
     }
   };
 

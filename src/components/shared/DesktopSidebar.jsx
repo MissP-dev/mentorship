@@ -1,15 +1,33 @@
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Home, Users, MessageSquare, Calendar, Video, UserCircle, Shield } from 'lucide-react';
 import Avatar from './Avatar';
-import ThemeToggle from './ThemeToggle';
+import logoSrc from '../../assets/mconnect-logo.png';
+
+const NAV_ITEMS = [
+  { to: '/feed', icon: Home, label: 'Home' },
+  { to: '/mentors', icon: Users, label: 'Find Mentors' },
+  { to: '/messages', icon: MessageSquare, label: 'Messaging' },
+  { to: '/events', icon: Calendar, label: 'Events' },
+  { to: '/meetings', icon: Video, label: 'Meetings' },
+  { to: '/profile', icon: UserCircle, label: 'Profile' },
+];
 
 export default function DesktopSidebar() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <aside className="hidden lg:block fixed left-0 top-12 bottom-0 w-[225px] z-40 overflow-y-auto">
+    <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-[225px] z-40 overflow-y-auto border-r border-gray-200 dark:border-[#1e293b] bg-white dark:bg-[#0d0f17]">
       <div className="p-3 space-y-3">
+
+        {/* Brand Logo */}
+        <div className="px-3 pt-2 pb-1">
+          <button onClick={() => navigate('/feed')} className="flex items-center w-full">
+            <img src={logoSrc} alt="MConnect" className="h-7 w-auto object-contain dark:[filter:brightness(0)_invert(1)_sepia(1)_saturate(5000%)_hue-rotate(250deg)]" />
+          </button>
+        </div>
+
         {/* Profile Card */}
         <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg overflow-hidden">
           <div className="h-14 bg-gradient-to-r from-purple-100 to-purple-50 dark:from-[#8b5cf6]/20 dark:to-[#6d28d9]/20 relative">
@@ -27,44 +45,42 @@ export default function DesktopSidebar() {
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg p-3">
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 font-medium">Shortcuts</p>
-          <div className="space-y-1">
-            <button
-              onClick={() => navigate('/groups')}
-              className="flex items-center gap-2 w-full text-xs text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors py-1"
-            >
-              <span className="w-4 h-4 bg-purple-100 dark:bg-[#8b5cf6]/20 rounded flex items-center justify-center">
-                <span className="text-[8px] text-purple-600 dark:text-[#8b5cf6] font-bold">G</span>
-              </span>
-              <span>Groups</span>
-            </button>
-            <button
-              onClick={() => navigate('/mentors')}
-              className="flex items-center gap-2 w-full text-xs text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors py-1"
-            >
-              <span className="w-4 h-4 bg-purple-100 dark:bg-[#8b5cf6]/20 rounded flex items-center justify-center">
-                <span className="text-[8px] text-purple-600 dark:text-[#8b5cf6] font-bold">M</span>
-              </span>
-              <span>Find Mentors</span>
-            </button>
-            <button
-              onClick={() => navigate('/settings')}
-              className="flex items-center gap-2 w-full text-xs text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors py-1"
-            >
-              <span className="w-4 h-4 bg-purple-100 dark:bg-[#8b5cf6]/20 rounded flex items-center justify-center">
-                <span className="text-[8px] text-purple-600 dark:text-[#8b5cf6] font-bold">S</span>
-              </span>
-              <span>Settings</span>
-            </button>
+        {/* Primary Navigation */}
+        <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg p-2">
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-2 font-medium">Shortcuts</p>
+          <div className="space-y-0.5">
+            {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 w-full text-xs rounded-md px-3 py-2 transition-all duration-200 ${
+                    isActive
+                      ? 'text-white font-medium bg-[#8b5cf6] dark:bg-[#8b5cf6] shadow-[0_0_16px_-2px_rgba(139,92,246,0.5)]'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-[#a78bfa] hover:bg-gray-100 dark:hover:bg-[#1e293b]'
+                  }`
+                }
+              >
+                <Icon size={16} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+            {user?.isAdmin && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 w-full text-xs rounded-md px-3 py-2 transition-all duration-200 ${
+                    isActive
+                      ? 'text-white font-medium bg-[#8b5cf6] dark:bg-[#8b5cf6] shadow-[0_0_16px_-2px_rgba(139,92,246,0.5)]'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-[#a78bfa] hover:bg-gray-100 dark:hover:bg-[#1e293b]'
+                  }`
+                }
+              >
+                <Shield size={16} />
+                <span>Admin</span>
+              </NavLink>
+            )}
           </div>
-        </div>
-
-        {/* Theme Toggle */}
-        <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg p-3 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Appearance</span>
-          <ThemeToggle />
         </div>
       </div>
     </aside>

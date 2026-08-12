@@ -1,16 +1,45 @@
-import { Heart, PartyPopper, HandHeart, MessageCircle, Trash2, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, MoreHorizontal, Trash2, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import Avatar from './Avatar';
 import { useNavigate } from 'react-router-dom';
 import { reactToPost, deletePost } from '../../services/posts';
 import { useAuth } from '../../context/AuthContext';
 
+const REPOST_KEY = 'mconnect_reposts';
+
+function loadRepostMap() {
+  try {
+    return JSON.parse(localStorage.getItem(REPOST_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
 export default function PostCard({ post, author, onDelete }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [reactions, setReactions] = useState(post.reactions);
   const [userReaction, setUserReaction] = useState(post.userReaction || null);
+  const [reposted, setReposted] = useState(() => (loadRepostMap()[post.id]?.reposted) ?? (post.userReposted || false));
+  const [repostCount, setRepostCount] = useState(() => (loadRepostMap()[post.id]?.count) ?? (post.repostCount || 0));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [mediaIndex, setMediaIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const isOwner = user && post.authorId === user.id;
+
+  const mediaItems = post.mediaUrls && post.mediaUrls.length > 0
+    ? post.mediaUrls
+    : post.mediaUrl
+      ? [post.mediaUrl]
+      : [];
+  const isVideo = post.mediaType === 'video' || post.mediaType === 'reel';
+  const handle = (author?.fullName || 'mconnect.member').toLowerCase().replace(/\s+/g, '.');
+  const likesCount = reactions.like || 0;
+
+  const engagementParts = [];
+  if (likesCount > 0) engagementParts.push(`${likesCount} like${likesCount !== 1 ? 's' : ''}`);
+  if (repostCount > 0) engagementParts.push(`${repostCount} repost${repostCount !== 1 ? 's' : ''}`);
+  const engagementText = engagementParts.join(' • ');
 
   const handleReaction = async (type) => {
     const prev = userReaction;
@@ -55,119 +84,195 @@ export default function PostCard({ post, author, onDelete }) {
     }
   };
 
+  const handleRepost = () => {
+    const map = loadRepostMap();
+    const entry = map[post.id] || {
+      reposted: post.userReposted || false,
+      count: post.repostCount || 0,
+      post,
+    };
+    const became = !entry.reposted;
+    entry.reposted = became;
+    entry.count = Math.max(0, entry.count + (became ? 1 : -1));
+    entry.post = post;
+    map[post.id] = entry;
+    try {
+      localStorage.setItem(REPOST_KEY, JSON.stringify(map));
+    } catch {}
+    setReposted(became);
+    setRepostCount(entry.count);
+    window.dispatchEvent(new Event('mconnect:reposts-changed'));
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/posts/${post.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'MConnect Post', text: 'Check out this post on MConnect', url });
+      } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        prompt('Copy this link:', url);
+      }
+    }
+  };
+
+  const caption = post.content || post.caption || '';
+  const showReadMore = caption.length > 150 && !expanded;
+
   return (
-    <div className="bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-[#1e293b] rounded-lg overflow-hidden">
-      <div className="p-3 sm:p-4 pb-0">
-        <div className="flex items-start gap-2.5">
-          <button onClick={() => author && navigate(`/profile`)}>
-            <Avatar src={author?.avatarUrl} alt={author?.fullName} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors cursor-pointer truncate">{author?.fullName}</p>
-              <span className="text-gray-400 dark:text-gray-600 text-xs">·</span>
-              <span className="text-[11px] text-gray-500 flex-shrink-0">{timeAgo(post.createdAt)}</span>
+    <article className="bg-white dark:bg-[#131726] rounded-2xl border border-gray-100 dark:border-[#1e293b] shadow-sm hover:shadow-md dark:hover:shadow-[0_8px_30px_-8px_rgba(139,92,246,0.12)] transition-shadow duration-200 overflow-hidden">
+      {/* Author header */}
+      <div className="flex items-center gap-2.5 px-4 pt-3 pb-2">
+        <button onClick={() => author && navigate('/profile')} className="shrink-0">
+          <Avatar src={author?.avatarUrl} alt={author?.fullName} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors cursor-pointer truncate">
+            {author?.fullName}
+          </p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
+            @{handle}
+            <span className="mx-1 text-gray-300 dark:text-gray-600">·</span>
+            {timeAgo(post.createdAt)}
+          </p>
+        </div>
+        <button
+          onClick={() => setMenuOpen((o) => !o)}
+          className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1e293b] transition-colors"
+          aria-label="Post options"
+        >
+          <MoreHorizontal size={18} />
+        </button>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+            <div className="absolute right-4 top-12 z-20 w-44 bg-white dark:bg-[#161b2b] rounded-lg shadow-lg border border-gray-100 dark:border-[#1e293b] py-1">
+              {isOwner && (
+                <button
+                  onClick={handleDelete}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-[#1e293b] transition-colors"
+                >
+                  <Trash2 size={14} /> Delete post
+                </button>
+              )}
             </div>
-            <p className="text-[11px] text-gray-500 mt-0.5">MConnect Member</p>
-          </div>
-          {isOwner && (
-            <button onClick={handleDelete} className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded hover:bg-gray-100 dark:hover:bg-[#1e293b]">
-              <Trash2 size={15} />
-            </button>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
-      <div className="px-3 sm:px-4 py-2.5">
-        <p className="text-[13px] text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{post.content}</p>
-      </div>
-
-      {post.mediaUrl && post.mediaType === 'image' && (
-        <div className="border-t border-gray-100 dark:border-[#1e293b]">
-          <img src={post.mediaUrl} alt="Post media" className="w-full object-cover max-h-[500px]" />
-        </div>
-      )}
-
-      {(reactions.like + reactions.celebrate + reactions.support) > 0 && (
-        <div className="px-3 sm:px-4 py-2 flex items-center justify-between text-[11px] text-gray-500">
-          <div className="flex items-center gap-1">
-            {reactions.like > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center">
-                  <Heart size={10} className="text-white" fill="white" />
-                </span>
-                {reactions.like}
-              </span>
-            )}
-            {reactions.celebrate > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="w-[18px] h-[18px] bg-yellow-500 rounded-full flex items-center justify-center text-[9px]">
-                  🎉
-                </span>
-                {reactions.celebrate}
-              </span>
-            )}
-            {reactions.support > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="w-[18px] h-[18px] bg-purple-500 rounded-full flex items-center justify-center text-[9px]">
-                  💜
-                </span>
-                {reactions.support}
-              </span>
-            )}
-          </div>
-          {post.commentCount > 0 && (
-            <button onClick={() => navigate(`/posts/${post.id}`)} className="hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors">
-              {post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}
-            </button>
+      {/* Main media container */}
+      {mediaItems.length > 0 && (
+        <div className="relative bg-black mx-0 rounded-none">
+          {isVideo ? (
+            <video
+              src={mediaItems[0]}
+              controls
+              playsInline
+              poster={post.thumbnailUrl}
+              className="w-full max-h-[500px] object-contain"
+            />
+          ) : (
+            <>
+              <img src={mediaItems[mediaIndex]} alt="Post media" className="w-full max-h-[500px] object-cover" loading="lazy" />
+              {mediaItems.length > 1 && (
+                <>
+                  {mediaIndex > 0 && (
+                    <button
+                      onClick={() => setMediaIndex((i) => i - 1)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                      aria-label="Previous photo"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                  )}
+                  {mediaIndex < mediaItems.length - 1 && (
+                    <button
+                      onClick={() => setMediaIndex((i) => i + 1)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                      aria-label="Next photo"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  )}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                    {mediaItems.map((_, i) => (
+                      <span
+                        key={i}
+                        className={`h-1.5 rounded-full transition-all ${i === mediaIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
           )}
         </div>
       )}
 
-      <div className="border-t border-gray-100 dark:border-[#1e293b] mx-3 sm:mx-4" />
-
-      <div className="px-1 sm:px-2 py-1 flex items-center">
+      {/* Action bar - Instagram style */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-1">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handleReaction('like')}
+            className={`p-1.5 transition-all duration-150 active:scale-110 ${
+              userReaction === 'like' ? 'text-[#ef4444]' : 'text-gray-500 dark:text-gray-400 hover:text-[#ef4444]'
+            }`}
+            aria-label="Like"
+          >
+            <Heart size={24} fill={userReaction === 'like' ? 'currentColor' : 'none'} strokeWidth={userReaction === 'like' ? 0 : 2} />
+          </button>
+          <button
+            onClick={() => navigate(`/posts/${post.id}`)}
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors"
+            aria-label="Comment"
+          >
+            <MessageCircle size={24} />
+          </button>
+          <button
+            onClick={handleShare}
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors"
+            aria-label="Share"
+          >
+            <Share2 size={22} />
+          </button>
+        </div>
         <button
-          onClick={() => handleReaction('like')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium transition-colors ${
-            userReaction === 'like'
-              ? 'text-purple-600 dark:text-[#8b5cf6]'
-              : 'text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa]'
-          }`}
+          onClick={handleRepost}
+          className={`p-1.5 transition-colors ${reposted ? 'text-green-500' : 'text-gray-500 dark:text-gray-400 hover:text-green-500'}`}
+          aria-label="Repost"
         >
-          <Heart size={16} fill={userReaction === 'like' ? 'currentColor' : 'none'} />
-          <span className="hidden sm:inline">Like</span>
-        </button>
-        <button
-          onClick={() => handleReaction('celebrate')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium transition-colors ${
-            userReaction === 'celebrate'
-              ? 'text-yellow-500'
-              : 'text-gray-500 hover:text-yellow-500'
-          }`}
-        >
-          <PartyPopper size={16} />
-          <span className="hidden sm:inline">Celebrate</span>
-        </button>
-        <button
-          onClick={() => handleReaction('support')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium transition-colors ${
-            userReaction === 'support'
-              ? 'text-purple-500 dark:text-[#a78bfa]'
-              : 'text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa]'
-          }`}
-        >
-          <HandHeart size={16} />
-          <span className="hidden sm:inline">Support</span>
-        </button>
-        <button
-          onClick={() => navigate(`/posts/${post.id}`)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-xs font-medium text-gray-500 hover:text-purple-600 dark:hover:text-[#a78bfa] transition-colors"
-        >
-          <MessageCircle size={16} />
-          <span className="hidden sm:inline">Comment</span>
+          <Repeat2 size={22} />
         </button>
       </div>
-    </div>
+
+      {/* Caption & comments */}
+      <div className="px-4 pb-4">
+        {engagementText && (
+          <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1 cursor-pointer" onClick={() => navigate(`/posts/${post.id}`)}>
+            {engagementText}
+          </p>
+        )}
+        <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed mt-1">
+          <span className="font-semibold text-gray-900 dark:text-white mr-1.5">{author?.fullName}</span>
+          {showReadMore ? caption.slice(0, 150) + '... ' : caption}
+          {showReadMore && (
+            <button onClick={() => setExpanded(true)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm ml-0.5">
+              more
+            </button>
+          )}
+        </p>
+        {post.commentCount > 0 && (
+          <button
+            onClick={() => navigate(`/posts/${post.id}`)}
+            className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            View all {post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}
+          </button>
+        )}
+      </div>
+    </article>
   );
 }

@@ -36,6 +36,7 @@ export default function CreatePostScreen() {
         serverMediaType = mediaType;
       }
       await createPost({ authorId: user.id, content, mediaUrl: serverMediaUrl, mediaType: serverMediaType });
+      window.dispatchEvent(new CustomEvent('mconnect:content-created', { detail: { type: 'post' } }));
       navigate('/feed', { replace: true });
     } catch (err) {
       console.error(err);
